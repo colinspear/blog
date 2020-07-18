@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Custom sklearn transformer - My personal blog</title><link rel="icon" type="image/png" href=icons/myicon.png /><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Custom sklearn transformer" />
+<meta property="og:description" content="For when your daily affirmations just aren&rsquo;t cutting it" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="colinspear.github.io/posts/sklearn-custom-transformer/" />
+<meta property="article:published_time" content="2020-01-11T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-01-11T00:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Custom sklearn transformer"/>
+<meta name="twitter:description" content="For when your daily affirmations just aren&rsquo;t cutting it"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet">
+
+	<link rel="stylesheet" type="text/css" media="screen" href="colinspear.github.iocss/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="colinspear.github.iocss/main.css" />
+	<link rel="stylesheet" type="text/css" href="colinspear.github.iocss/custom.css" />
+	<link rel="stylesheet" type="text/css" href="colinspear.github.iocss/dark.css"  />
+	<link rel="stylesheet" type="text/css" href="colinspear.github.iocss/custom-dark.css"  />
+
+	<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+	<script src="colinspear.github.iojs/main.js"></script>
+	<script src="colinspear.github.iojs/abc.js"></script>
+	<script src="colinspear.github.iojs/xyz.js"></script>
+	<script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header">
+	<base href="colinspear.github.io">
+	<h1 class="site-title"><a href="colinspear.github.io">My personal blog</a></h1>
+	<div class="site-description"><h2>Clean and minimal personal <a href="https://github.com/vividvilla/ezhil">blog theme for Hugo</a></h2><nav class="nav social">
+			<ul class="flat"><a href="https://github.com/vividvilla/ezhil" title="Github"><i data-feather="github"></i></a><a href="https://twitter.com/gohugoio" title="Twitter"><i data-feather="twitter"></i></a><a href="https://www.linkedin.com/in/colinspear/" title="LinkedIn"><i data-feather="linkedin"></i></a></ul>
+		</nav>
+	</div>
+
+	<nav class="nav">
+		<ul class="flat">
+			
+			<li>
+				<a href="colinspear.github.io/">Home</a>
+			</li>
+			
+			<li>
+				<a href="colinspear.github.io/posts">All posts</a>
+			</li>
+			
+			<li>
+				<a href="colinspear.github.io/about">About</a>
+			</li>
+			
+			<li>
+				<a href="colinspear.github.io/tags">Tags</a>
+			</li>
+			
+		</ul>
+	</nav>
+</div>
+
+
+		<div class="post-header">
+			<h1 class="title">Custom sklearn transformer</h1>
+			<div class="meta">Posted at &mdash; Jan 11, 2020</div>
+		</div>
+
+		<div class="markdown">
+			<p>Scikit-learn comes with a number of useful built-in data transformation functions that allow you to <a href="https://scikit-learn.org/stable/modules/classes.html#module-sklearn.impute">impute missing values</a>, <a href="https://scikit-learn.org/stable/modules/classes.html#module-sklearn.preprocessing">scale numerical data</a>, etc.
+Eventually, however, you will want to manipulate your data in a way that is not supported by the built-in offerings.
+Luckily for us, sklearn is also incredibly <a href="https://arxiv.org/abs/1309.0238">well designed</a> and makes creating custom  methods and integrating them into your workflow easy as pie.</p>
+<h2 id="how-the-sausage-gets-made">How the sausage gets made</h2>
+<ul>
+<li>Include a brief intro to sklearn&rsquo;s API design</li>
+</ul>
+<p>For this exercise, I&rsquo;m going to be using data about my Spotify Discover Weekly playlists.
+If you like music, but don&rsquo;t know about <a href="https://hackernoon.com/spotifys-discover-weekly-how-machine-learning-finds-your-new-music-19a41ab76efe">Discover Weekly</a>, you&rsquo;ll probably want to acquaint yourself.
+I&rsquo;ve been collecting data on my weekly playlists since fall of 2019 with vague plans to turn it into some sort of project.
+The <a href="https://spotipy.readthedocs.io/en/latest/">spotipy</a> library makes it easy to access all of the amazing data that Spotify makes available through its API.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#719e07">import</span> pandas <span style="color:#719e07">as</span> pd
+<span style="color:#719e07">import</span> pathlib
+
+project_dir <span style="color:#719e07">=</span> pathlib<span style="color:#719e07">.</span>Path()<span style="color:#719e07">.</span>cwd()<span style="color:#719e07">.</span>parent
+song_features <span style="color:#719e07">=</span> pd<span style="color:#719e07">.</span>read_pickle(project_dir <span style="color:#719e07">/</span> <span style="color:#2aa198">&#39;data/raw/dw_combined.pkl&#39;</span>)
+
+cols <span style="color:#719e07">=</span> [<span style="color:#2aa198">&#39;song_length_ms&#39;</span>, <span style="color:#2aa198">&#39;tempo&#39;</span>, <span style="color:#2aa198">&#39;tempo_confidence&#39;</span>,
+        <span style="color:#2aa198">&#39;instrumentalness&#39;</span>, <span style="color:#2aa198">&#39;liveness&#39;</span>, <span style="color:#2aa198">&#39;loudness&#39;</span>, <span style="color:#2aa198">&#39;speechiness&#39;</span>, 
+        <span style="color:#2aa198">&#39;valence&#39;</span>, <span style="color:#2aa198">&#39;acousticness&#39;</span>, <span style="color:#2aa198">&#39;danceability&#39;</span>, 
+        <span style="color:#2aa198">&#39;energy&#39;</span>, <span style="color:#2aa198">&#39;popularity&#39;</span>]
+
+song_features <span style="color:#719e07">=</span> song_features[cols]
+</code></pre></div><p>Generally, when we want to make a custom transformer, we should have some reason to believe that a specific combination or transformation of one or more variables will be a good predictor for the target variable. We don&rsquo;t have a super obvious such relationship here, so I&rsquo;m going to make some hypotheses without any evidence in their favor. Don&rsquo;t do this in the wild.</p>
+<p>My first hypothesis is that faster soongs will be more popular. But I want to adjust for uncertainty in song speed. To do this I can use <code>tempo_confidence</code> to weight <code>tempo</code>, essentially &ldquo;slowing down&rdquo; tracks that have lower degree of tempo certainty.</p>
+<p>The second hypothesis is a bit more far-fetched, so I am only going to include it as an optional argument in my transformer. I&rsquo;m going to say more danceable songs will be more popular, so long as they are not too long (people get tired, right?). So if we divide <code>song_length_ms</code> by <code>danceability</code>, the resulting feature (<code>fatigue_factor</code>) should have an inverse relationship with popularity. We can alway see if this brazen assumption holds after we make the transformation.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#719e07">import</span> numpy <span style="color:#719e07">as</span> np
+<span style="color:#719e07">from</span> sklearn.base <span style="color:#719e07">import</span> BaseEstimator, TransformerMixin
+
+<span style="color:#586e75"># get the right column indices: safer than hard-coding indices 3, 4, 5, 6</span>
+tempo_ix, tempo_conf_ix, dance_ix, length_ix <span style="color:#719e07">=</span> [
+    <span style="color:#b58900">list</span>(song_features<span style="color:#719e07">.</span>columns)<span style="color:#719e07">.</span>index(col)
+    <span style="color:#719e07">for</span> col <span style="color:#719e07">in</span> (<span style="color:#2aa198">&#39;tempo&#39;</span>, <span style="color:#2aa198">&#39;tempo_confidence&#39;</span>, <span style="color:#2aa198">&#39;danceability&#39;</span>, <span style="color:#2aa198">&#39;song_length_ms&#39;</span>)]
+
+<span style="color:#719e07">class</span> <span style="color:#268bd2">CustomFeaturesAdder</span>(BaseEstimator, TransformerMixin):
+    <span style="color:#719e07">def</span> __init__(<span style="color:#268bd2">self</span>, add_fatigue_factor <span style="color:#719e07">=</span> <span style="color:#268bd2">True</span>): <span style="color:#586e75"># no *args or **kwargs</span>
+        <span style="color:#268bd2">self</span><span style="color:#719e07">.</span>add_fatigue_factor <span style="color:#719e07">=</span> add_fatigue_factor
+    <span style="color:#719e07">def</span> <span style="color:#268bd2">fit</span>(<span style="color:#268bd2">self</span>, X, y<span style="color:#719e07">=</span><span style="color:#268bd2">None</span>):
+        <span style="color:#719e07">return</span> <span style="color:#268bd2">self</span>  <span style="color:#586e75"># nothing else to do</span>
+    <span style="color:#719e07">def</span> <span style="color:#268bd2">transform</span>(<span style="color:#268bd2">self</span>, X, y<span style="color:#719e07">=</span><span style="color:#268bd2">None</span>):
+        weighted_tempo <span style="color:#719e07">=</span> X[:, tempo_ix] <span style="color:#719e07">*</span> X[:, tempo_conf_ix]
+        <span style="color:#719e07">if</span> <span style="color:#268bd2">self</span><span style="color:#719e07">.</span>add_fatigue_factor:
+            fatigue_factor <span style="color:#719e07">=</span> X[:, length_ix] <span style="color:#719e07">/</span> X[:, dance_ix]
+            <span style="color:#719e07">return</span> np<span style="color:#719e07">.</span>c_[X, weighted_tempo, fatigue_factor]
+        <span style="color:#719e07">else</span>:
+            <span style="color:#719e07">return</span> np<span style="color:#719e07">.</span>c_[X, weighted_tempo]
+
+features_adder <span style="color:#719e07">=</span> CustomFeaturesAdder(add_fatigue_factor<span style="color:#719e07">=</span><span style="color:#268bd2">True</span>)
+music_plus <span style="color:#719e07">=</span> features_adder<span style="color:#719e07">.</span>transform(song_features<span style="color:#719e07">.</span>values)
+</code></pre></div>
+		</div>
+
+		<div class="post-tags">
+			
+				
+					<nav class="nav tags">
+							<ul class="flat">
+								
+								<li><a href="/colinspear.github.io/tags/machine-learning">machine learning</a></li>
+								
+								<li><a href="/colinspear.github.io/tags/shallow">shallow</a></li>
+								
+							</ul>
+					</nav>
+				
+			
+		</div>
+		<div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'localhost';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © Copyright notice |  <a href="https://github.com/vividvilla/ezhil">Ezhil theme</a> | Built with <a href="https://gohugo.io">Hugo</a></div>
+	</nav>
+</div>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-123-45', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+<script>feather.replace()</script>
+</body>
+</html>
