@@ -1,10 +1,10 @@
 baseURL = "https://colinspear.github.io/"
 relativeURLs = true
 languageCode = "en-us"
-title = "My personal blog"
+title = "Brainwash"
 theme = "ezhil"
 
-copyright = "© Copyright notice"
+copyright = "© Colin Spear, 2020"
 
 # Enable syntax highlighting.
 pygmentsstyle = "solarized-dark"
@@ -24,7 +24,7 @@ summaryLength = 20
 
 [params]
     # Blog subtitle which appears below blog title. Supports markdown.
-    subtitle = "Clean and minimal personal [blog theme for Hugo](https://github.com/vividvilla/ezhil)"
+    subtitle = "Scrubbing my brain clean to think again"
 
     # Content types which are included in home page recent posts list.
     mainSections = ["posts"]
