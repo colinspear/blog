@@ -4,7 +4,7 @@ date: 2020-01-04
 tags: ['machine learning']
 author: 'Colin'
 summary: 'Hold on to your purses, ladies and gentlemen'
-draft: false
+draft: true
 ---
 
 Multi-armed bandits seem super interesting from both a theoretical and practical perspective. I'd like to do a post that does a brief overview on both sides.

@@ -4,7 +4,7 @@ date: 2020-01-11
 tags: ['machine learning', 'shallow']
 author: 'Colin'
 summary: "For when your daily affirmations just aren't cutting it"
-draft: false
+draft: true
 ---
 
 Scikit-learn comes with a number of useful built-in data transformation functions that allow you to [impute missing values](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.impute), [scale numerical data](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.preprocessing), etc. 
