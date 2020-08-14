@@ -33,11 +33,23 @@ This will open up your crontab file which will be where all your jobs live. If y
  * * * * * <command to execute>
 ```
 
-- explain above
-- Quirks
-    - Save an quit or else might not work
-- Make log file
-- turn off emails
+In my case, I want my bot to post often enough that there is regular new content, but without running out of samples too quickly. For this project I'm using a dataset of applications for [California Vanity license plates](https://github.com/veltman/ca-license-plates). I'm only interested in rejected plates, so once I drop the others and do a bit more clean up, I'm left with **NUMBER** remaining samples. At this rate, if I were to post twice a day, it would take **NUMBER** to run out of samples. That seems sufficiently long, so twice a day it is. Here's the line in my crontab that does just that[^1]:
+
+```
+30 9,21 * * * /path/to/program /path/to/script
+```
+
+The above command says, "run `script` using `program` at each 9:30 am (minute 30 of hour 9) and 9:30 pm (minute 30 of hour 21)." This demonstrates how you can uses commas to specify more than one instance of the period you are referring to. Other special characters are `*/` which will run your command at a specific interval (`/*5 * * * *` will run your command every 5 minutes), `-` which will run your command at each point between the numbers on either side of the `-` (`* * * * 1-5` will run your command once a day, Monday through Friday). Have a look at [this link](https://ostechnix.com/a-beginners-guide-to-cron-jobs/) for more shortcuts when scheduling jobs. Also, be sure to save and close your crontab before you start freaking out about your job not running even though every. detail. is perfect.
+
+Annoyingly, crontab sends default system emails after each cron job is executed. To disable this feature, simply add `2>&1` to the end of the job's line in your crontab. It can also be nice to save a log of anything that goes wrong with your job. It can also help if you need to debug your job because it's not doing what you want. To do this, simply redirect the output of the command to a log file. Making these two changes, the above line in my crontab becomes:
+
+```
+30 9,21 * * * /path/to/program /path/to/script > /path/to/logfile.log 2>&1
+```
+
+Now I have a program that runs twice a day, prints any error that comes up to a log file and does not spam me with a bunch of email I don't want. Yeeha. Unfortunately, this really isn't great if you ever turn your computer off.
+
+
 - run at save / close
 
 - Okay, that was great. Unfortunately, crontab doesn\'t have a lot of flexibility. 
@@ -55,3 +67,4 @@ Launchd
 - [launchd.info](launchd.info) has everything you need to write your plist files and schedule your jobs
 - Definitely a bit of a pain, but not complicated once you get the hang
   
+[^1]: If, like me, you are running a python program and want to use the python version you have in your virtual environment, be sure your `/path/to/program` points to that python version. For me (I run a Macbook) that path takes the shape `/Users/user_name/.virtualenvs/env_name/bin/python`. 
