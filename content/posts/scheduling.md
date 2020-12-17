@@ -1,7 +1,7 @@
 ---
 title: 'Local job scheduling'
 date: 2020-07-21
-tags: ['scheduling', 'shell']
+tags: ['command line', 'shell']
 author: 'Colin'
 summary: "In which Colin learns to schedule a task"
 draft: true

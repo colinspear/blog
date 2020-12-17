@@ -4,7 +4,8 @@ date: 2020-12-17
 tags: ['command line', 'grep', 'awk']
 author: 'Colin'
 summary: 'Using the command line to count stuff'
-draft: true
+draft: false
+disqus: false
 ---
 
 I have been working on updating a 15 year old data collection / ETL process in the last weeks. As part of the planning process, I wanted to know how many people are using the data we collect[^1]. Sure, I could _ask_ people, but how does that help me sharpen my skills a Data Wizard[^2].
