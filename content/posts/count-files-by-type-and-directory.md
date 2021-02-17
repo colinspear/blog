@@ -1,7 +1,7 @@
 ---
 title: 'Count files by type and directory'
 date: 2020-12-17
-tags: ['command line', 'grep', 'awk']
+tags: ['command-line', 'bash', 'grep', 'awk']
 author: 'Colin'
 summary: 'Using the command line to count stuff'
 draft: false
