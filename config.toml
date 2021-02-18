@@ -24,7 +24,7 @@ summaryLength = 20
 
 [params]
     # Blog subtitle which appears below blog title. Supports markdown.
-    subtitle = ""
+    subtitle = "Learning in public"
 
     # Content types which are included in home page recent posts list.
     mainSections = ["posts"]
