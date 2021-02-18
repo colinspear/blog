@@ -2,7 +2,7 @@
 title: "Move and rename all files in a folder"
 date: 2021-02-17T12:49:31-08:00
 draft: false
-tags: ['bash', 'command line']
+tags: ['bash', 'command-line']
 disqus: false
 ---
 
