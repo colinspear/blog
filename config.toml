@@ -1,10 +1,10 @@
 baseURL = "https://colinspear.github.io/"
 relativeURLs = true
 languageCode = "en-us"
-title = "Brainwash"
+title = "Colin Spear"
 theme = "ezhil"
 
-copyright = "© Colin Spear, 2020"
+copyright = "© Colin Spear, 2021"
 
 # Enable syntax highlighting.
 pygmentsstyle = "solarized-dark"
@@ -24,7 +24,7 @@ summaryLength = 20
 
 [params]
     # Blog subtitle which appears below blog title. Supports markdown.
-    subtitle = "Scrubbing my brain clean to think again"
+    subtitle = ""
 
     # Content types which are included in home page recent posts list.
     mainSections = ["posts"]
@@ -36,7 +36,7 @@ summaryLength = 20
     featherIconsCDN = true
 
     # Specify favicon (icons/i.png maps to static/icons/i.png). No favicon if not defined.
-    favicon = "icons/myicon.png"
+    favicon = "icons/favicon.ico"
 
     # Switch to dark mode or auto detect mode from OS (Optional).
     # "dark" will set mode to dark and "auto" will switch to dark mode if OS is in dark mode.
