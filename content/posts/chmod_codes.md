@@ -2,7 +2,8 @@
 title: "Change your file permissions, baby!"
 date: 2021-02-24T08:28:54-08:00
 tags: ['bash', 'command-line']
-draft: False
+draft: false
+disqus: false
 ---
 
 Knowing how to set file permissions is very useful (for a much more thorough primer than I provied here, see [this article](https://docs.nersc.gov/filesystems/unix-file-permissions/)). Unfortunately, while this is very easy to do, it is even easier to forget the codes used to do so. So here's how you do it! 
