@@ -12,3 +12,5 @@ Multi-armed bandits seem super interesting from both a theoretical and practical
 Inspired by the book [Algorithms to Live By](https://brianchristian.org/algorithms-to-live-by/) and this tweet:
 
 <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Have been trying to get adaptive trials in lab and surveys published in econ for a few years now. Has been a struggle, v frustrating <a href="https://t.co/l0mhzQkOpX">https://t.co/l0mhzQkOpX</a></p>&mdash; Colin Camerer (@CFCamerer) <a href="https://twitter.com/CFCamerer/status/1213576706776125440?ref_src=twsrc%5Etfw">January 4, 2020</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> '
+
+There's also [this](https://en.wikipedia.org/wiki/Multi-armed_bandit), check out especially the section on [contextual bandits](https://en.wikipedia.org/wiki/Multi-armed_bandit#Contextual_bandit). Also have a look at [Susan Athey's](https://www.gsb.stanford.edu/faculty-research/faculty/susan-athey) work.
