@@ -2,7 +2,7 @@
 title: "Change git branch (master to main)"
 date: 2021-03-17T13:59:39-07:00
 tags: ['git']
-draft: true
+draft: false
 ---
 
 Here's another thing I've googled enough times to just put it somewhere I know.
