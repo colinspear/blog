@@ -1,8 +1,9 @@
 ---
 title: "Change git branch (master to main)"
-date: 2021-03-17T13:59:39-07:00
-tags: ['git']
+date: 2021-03-17
 draft: false
+tags: ['git']
+disqus: false
 ---
 
 Here's another thing I've googled enough times to just put it somewhere I know.

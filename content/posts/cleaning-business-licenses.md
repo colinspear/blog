@@ -8,11 +8,13 @@ draft: true
 disqus: false
 ---
 
-In this post, I uniquely identify Vancouver Businesses [link here](https://opendata.vancouver.ca/explore/dataset/business-licences). This is the first post in a series on building an end to end machine learning product. At the end of this journey, I hope to have a MLOps / CICD flavoured web app that will help aspiring Vancouver business owners decide if opening their business is a good idea. 
+This is the first post in a series on building an end to end machine learning tool using [Vancouver Businesses License data](https://opendata.vancouver.ca/explore/dataset/business-licences) from Vancouver's [Open Data Portal](https://opendata.vancouver.ca/pages/home/). V0 will be a trained model, served up to a website with a simple front end where aspiring Vancouver business owners can plug in some information about their business and get back a success likelihood score[^1] that can help them decide if opening their business is a good idea. 
 
-Now, uniquely identifying Vancouver Businesses sure doesn't sound very sexy, but it is a very real and important part of the process since all new data that gets incorporated into the model down the road is going to have to go through this same process. And if we can't properly identify businesses, we can't well say much about them.
+Data cleaning has been getting some attention lately (e.g. [here](http://veekaybee.github.io/2021/03/26/data-ghosts/), [here](https://twitter.com/beeonaposy/status/1353735905962577920) and [here](https://storage.googleapis.com/pub-tools-public-publication-data/pdf/0d556e45afc54afeb2eb6b51a9bc1827b9961ff4.pdf)), so while cleaning the data sure doesn't sound very sexy, it is a very real and important part of the process as anybody who has worked with real word data can attest. Our model is only as good as our data, so it's vital that we get it nice and shiny. 
 
-The first thing I will do[^1] is load our data and take a cursory look at what's in it:
+One other quick note about this before we bust out the elbow grease. In this case, the exercise became mostly about two things: 1) identifying unique businesses and 2) capturing when businesses shuttered without reporting it to the city. The first is important because if we can't identify businesses, we can't well say much about them. The second is what we're going to build our target from, so it's really the most important bit of information we've got. Other than this, the data starts out pretty clean (consistent formats, not so many missing values, decent documentation, etc.), so let's count our blessings :)
+
+The first thing I will do[^2] is load our data and take a cursory look at what's in it:
 
 ```python
 import pandas as pd
@@ -62,92 +64,80 @@ According to the [documentation](https://opendata.vancouver.ca/explore/dataset/b
 
 I started this project knowing nothing about how the Vancouver Business Licencing process works, so when I first glanced at the data I assumed that businesses retain the same license throughout their existence and simply update the same license on a periodic basis (this must happen yearly in Vancouver). This would be great, because then we could just use `LicenceRSN` to identify our business. 
 
-Unfortunately[^2], each time a business renews their license, they get a brand new `LicenceRSN`. Ideally there would be a `BusinessID` column that would give a unique identifier for each business. After some email correspondence with someone on Vancouver's Open Data team, I learned that's not how it works. So, I will have to figure out how to ID businesses myself using the information that's here.
+Unfortunately, each time a business renews their license, they get a brand new `LicenceRSN`. Ideally there would be a `BusinessID` column that would provide a unique identifier for each business. After some email correspondence (Data Science!) with someone on Vancouver's Open Data team, I learned that's not how it works. So, I will have to figure out how to ID businesses myself using the information that's here.
 
 We can use any business information we have that doesn't change over time as an identifying element. If we are generous with our assumptions, that would include all location data, business name and business type. Of course it is entirely possible that all of these things _can_ change (the most common of these would likely be that a business changes location) and it is almost certain that there is at least one instance of each changing somewhere in our data.
 
-In the interest of standing up a complete ML pipeline as quickly as possible, I'm going to work under the assumption that most businesses stay put and do not change their name or type for the duration of their existence. We can come back to this later when we are refining our model at a later stage.
+In the interest of standing up a complete pipeline as quickly as possible, I'm going to assume that most businesses stay put and do not change their name or type for the duration of their existence. I'm also only going to include businesses located in BC that have registered names. We can revisit these assumptions when we are refining our model at a later stage.
+
+Since there are potentially quite a few identifying columns, I'll start with those that give the name and type of business and slowly expand my set to see how this changes the number of businesses we identify:
 
 ```python
+# Only want named BC businesses
 df = df.loc[df['Province']=='BC']
 df = df.loc[df['BusinessName'].notnull()]
+# Base set of ID columns
 id_cols = ['BusinessName', 'BusinessTradeName', 'BusinessType', 'BusinessSubType']
 
+# Any row with a NaN will be dropped when making id
 for col in id_cols + ['House', 'Street', 'City', 'PostalCode', 'LocalArea']:
     df[col] = df[col].replace(np.nan, '')
     df[col] = df[col].replace('NaN', '')
 
-# df['BusinessName'].replace(np.nan, -1)
+# Generate potential IDs
 df['name_id'] = df.groupby(id_cols).ngroup()
 df['name_year_id'] = df.groupby(id_cols + ['FOLDERYEAR']).ngroup()
 df['name_code_id'] = df.groupby(id_cols + ['PostalCode']).ngroup()
 df['name_code_year_id'] = df.groupby(id_cols + ['FOLDERYEAR', 'PostalCode']).ngroup()
 df['name_address_id'] = df.groupby(id_cols + ['House', 'Street', 'City', 'PostalCode', 'LocalArea']).ngroup()
 df['name_address_year_id'] = df.groupby(id_cols + ['FOLDERYEAR', 'House', 'Street', 'City', 'PostalCode', 'LocalArea']).ngroup()
-# df['id'] = df['id'].replace(-1, np.nan)
 
-for var in ['name_year_id', 'name_code_year_id', 'name_address_year_id']:
-    print(len(df[var].unique()))
+for var in [
+  'name_id', 'name_code_id', 'name_address_id', 'name_year_id', 
+  'name_code_year_id', 'name_address_year_id'
+  ]:
+    print(f'Unique rows, {var}: ', len(df[var].unique()))
 ```
+    Unique rows, name_id:  105776
+    Unique rows, name_code_id:  114492
+    Unique rows, name_address_id:  161396
+    Unique rows, name_year_id:  461196
+    Unique rows, name_code_year_id:  477565
+    Unique rows, name_address_year_id:  483174
 
-    461196
-    477565
-    483174
+The first three values give us the number of businesses throughout the seven years covered in the data. Rows four to six include the year in the identification, so that's the number of unique business-year combinations. Not surprisingly, when we add the business address to our identification, we get more unique values. The tradeoff here is that without the address we get to keep more data for our analysis, but we incorrectly consider any business that changes their address to be a new business. For now, I am going to choose to go with the id that gives us the most unique values (`name_address_id`). The name only IDs will be useful when we come back to find the business movers.
 
+There are 7,641 licences that are not unique by year (after dropping non-BC and nameless businesses). This is a bit less than 1.5% of the total which doesn't sound too bad. Using name alone would throw out about 6%. We'll be able to recoup some of these, but we will undoubtedly have to throw some out that whose uniqueness can't be distinguished[^3].
 
-As we add more columns to our identification, we get more unique values (naturally). On the one hand this is good because we get to keep more data for our analysis, on the other hand we will end up misidentifying a business that changed address as a unique business. I am going to choose to go with the id that gives us the most unique values (`name_address_id`), then work backward to find any businesses that changed address.
+To uniquely identify some of those 7,641 businesses, we are going to use the `LicenceRevisionNumber` column. This is a year specific value that is recorded when some aspect of the licence changes (this could perhaps be useful when we come back to our businesses that changed address).
 
-Even with the most detailed id, there are almost 30,000 licences that are not unique by year. We'll take a look at these to see if we can do anything about this. We'll be able to save some of these with the `LicenceRevisionNumber` column, but we will undoubtedly have to throw some out that we just aren't able to distinguish.
-
-As with any analysis, there is always a trade-off between time and perfection. There are a lot of ways people refer to this (analysis paralysis, 80-20 rule, etc.) and it is an ever-present menace. There will always be little rabbit holes to go down, curiosities, inexplicable cases that "maybe if I just dig a little deeper, I can explain!!!". It's up to you as the analyst (or me in this case) to decide what is a good use of your time. **This. Is. Hard.** Always. Personally I have the attention span of a two year old, so I am always having to drag myself back to ask myself if what I am doing is likely to have a material impact on the analysis or if I am simply chasing something shiny. 
-
-With that in mind, I am going to restrict myself to 1) finding address change cases and 2) finding licence revisions for uniquely identified companies. I'm sure there will still be duplicates after this. If I want to be super careful, I can compare features (`Status`, `NumberofEmployees`, etc.) of the licences I am throwing out to the licences I am keeping to see if they differ in any substantial way. Let's start with 2).
-
+Firstly, let's have a look at our duplicates:
 
 ```python
+# Rename IDs and drop ones we aren't going to use
 df['id'] = df['name_address_id']
 df['year_id'] = df['name_address_year_id']
+df = df.drop([
+  'name_id', 'name_year_id', 'name_code_id', 'name_code_year_id', 
+  'name_address_id', 'name_address_year_id'
+  ], axis=1)
 
-df = df.drop(['name_id', 'name_year_id', 'name_code_id', 'name_code_year_id', 'name_address_id', 'name_address_year_id'], axis=1)
-```
-
-
-```python
-print(len(df['id'].unique()))
-print(len(df['year_id'].unique()))
-```
-
-    161396
-    483174
-
-
-
-```python
+# Select within year duplicates and have a look
 year_duplicates = df.loc[df['year_id'].duplicated(keep=False)]
 
-# year_duplicates.sort_values(['id', 'FOLDERYEAR', 'LicenceRevisionNumber'])[:20]
+year_duplicates.sort_values(['id', 'FOLDERYEAR', 'LicenceRevisionNumber'])[:20]
 ```
 
-
-```python
-year_duplicates.shape
-```
-
-
-
-
-    (12652, 26)
-
-
-
-So I see both licence revisions as well as other cases. Let's just look at the licence revisions.
-
+I am saving you the output of that last command because it doesn't translate well to a blog post (wayyy too many columns). I will tell you however, that after looking at a number of chunks of this dataframe (i.e. moving those `[:20]` indices around a bit), I can see that we have both licence revisions as well as other cases in there. Let's just look at the licence revisions.
 
 ```python
 lic_revisions = year_duplicates.loc[~year_duplicates.duplicated(subset=['year_id', 'LicenceRevisionNumber'], keep=False)]
 
-# lic_revisions.sort_values(['id', 'FOLDERYEAR', 'LicenceRevisionNumber'])[:10]
+lic_revisions.sort_values(['id', 'FOLDERYEAR', 'LicenceRevisionNumber'])[:10]
 ```
+
+In the interest of time and actually getting something working, I am going to restrict myself to 1) finding address change cases[^4] and 2) finding licence revisions for uniquely identified companies. I'm sure there will still be duplicates after this. If I want to be super careful, I can compare features (`Status`, `NumberofEmployees`, etc.) of the licences I am throwing out to the licences I am keeping to see if they differ in any substantial way. Let's start with 2).
+
 
 This looks pretty good! All of these went from an initial status of `Inactive` to `Issued`. My guess is that these are folks who didn't submit their renewal application by the end of the year so their licence lapsed (the [documentation](https://opendata.vancouver.ca/explore/dataset/business-licences/information/?disjunctive.status&disjunctive.businesssubtype) defines `Inactive` as *Licence is no longer active*). As it turns out, close to 90% of these licences take on one of these values. So what do the others look like?
 
@@ -166,9 +156,9 @@ lic_revisions['max_rev'] = lic_revisions.groupby('year_id')['LicenceRevisionNumb
       lic_revisions['max_rev'] = lic_revisions.groupby('year_id')['LicenceRevisionNumber'].transform('max')
 
 
-Hmm. Strange. `LicenceRevisionNumber` doesn't always start with `0` and seems to sometimes skip values. However, it still looks like the highest `LicenceRevisionNumber` is the most recent license status. If I look at all the observations for a particular business it looks like this isn't unusual - lots of transitions from `Inactive` to `Issued`[^2]. What happens if we just take the latest lecence revision for each company?
+Hmm. Strange. `LicenceRevisionNumber` doesn't always start with `0` and seems to sometimes skip values. However, it still looks like the highest `LicenceRevisionNumber` is the most recent license status. If I look at all the observations for a particular business it looks like this isn't unusual - lots of transitions from `Inactive` to `Issued`[^5]. What happens if we just take the latest lecence revision for each company?
 
-[^2] I also noticed after rereading the documentation of Status and poking around the city's business licence website that a status of `Cancelled` most likely means a cancelled application. I don't think these will be relevant for us, so they will need to be dropped at some point. Also, as far as going out of business goes, the city says this: 
+I also noticed after rereading the documentation of Status and poking around the city's business licence website that a status of `Cancelled` most likely means a cancelled application. I don't think these will be relevant for us, so they will need to be dropped at some point. Also, as far as going out of business goes, the city says this: 
 
 > Please tell us if you close your business. It helps us keep our records up-to-date so we don't send you licence renewal notices in the future.
 
@@ -191,9 +181,9 @@ lic_revisions.loc[lic_revisions['LicenceRevisionNumber']==lic_revisions['max_rev
 
 
 
-Looks pretty good. I'm going to go ahead and go with this. I will have to figure out what to do with the `Pending` and `Inactive` cases, but that will apply to the rest of the data as well, so I will do that all together. Now to see about the year duplicates that are not because of licence revisions.[^3]
+Looks pretty good. I'm going to go ahead and go with this. I will have to figure out what to do with the `Pending` and `Inactive` cases, but that will apply to the rest of the data as well, so I will do that all together. Now to see about the year duplicates that are not because of licence revisions.[^6]
 
-[^3] Full disclosure, after making the `other_duplicates` dataframe below, I had a quick look at the data, grabbing some random chunks of rows just to see what they looked like. That led to the following *Major Discovery*.
+[^7] Full disclosure, after making the `other_duplicates` dataframe below, I had a quick look at the data, grabbing some random chunks of rows just to see what they looked like. That led to the following *Major Discovery*.
 
 
 ```python
@@ -337,9 +327,9 @@ Owning a rental property is overrepresented in the duplicated data (about 12% of
 >
 > Description of the business activity, usually in accordance with the definition in the Licence By-Law No. 4450. Note: Business type names that have a notation of *Historic* at the end signify retired business licence types. These are business licence types that were once active but have since been retired. **Due to privacy concern, some business types do not have address data.**
 
-So any person (business) who owns and rents out more than one property in the same year will be duplicated. I wasn't able to find confirmation that a licence is required for *every* rental property[^3], but based on what I can see here it seems likely. A quick email to the City would probably be able to confirm.
+So any person (business) who owns and rents out more than one property in the same year will be duplicated. I wasn't able to find confirmation that a licence is required for *every* rental property[^8], but based on what I can see here it seems likely. A quick email to the City would probably be able to confirm.
 
-[^3] After five minutes of searching :D... 80-20 rule, etc...
+[^9] After five minutes of searching :D... 80-20 rule, etc...
 
 Now we have a choice. Are these duplicates important to save? Can we just throw them out? Whatever we decide to do, it's important to think about the implications of the decision from both a technical and business perspective. How does our decision impact our data and further downstream, our modeling? What are our business goals and how does our decision impact these?
 
@@ -391,13 +381,12 @@ df['lifespan'] = df['max_year'] - df['min_year']
 df = df.loc[df['lifespan']!=0]
 ```
 
-It's worth noting here that I am dropping all businesses established in the latest year. Since we are building a model to predict business survival, these aren't very useful to us as they haven't been around long enough to tell us anything[^4]. At some point we will have to define what it means to survive, but for now I will just keep track of how long a business has been around and worry about what survival means during analysis.
+It's worth noting here that I am dropping all businesses established in the latest year. Since we are building a model to predict business survival, these aren't very useful to us as they haven't been around long enough to tell us anything[^10]. At some point we will have to define what it means to survive, but for now I will just keep track of how long a business has been around and worry about what survival means during analysis.
 
 I had originally planned on also dropping businesses that never took on an `Issued` status. I had a look at them (see commented code below) and most of them show a value of `Pending` for one or more years before switching to `Gone Out of Business`. It's hard to know exactly what is going on with these. It could be an error or it could be that these businesses never finished their application, paid their fees, or didn't get their application approved for some other reason. Either way, it seems they were mostly operating so I think I will keep them in the data and assume they were operating until the final year they appear.
 
 Now let's ID the businesses that went out of business but never notified the city.
 
-[^4] There is plenty of interesting analysis that you could do with these, including looking at the effect of Covid 19 on business creation, something that I would very much like to do at some point. But for now, prediction.
 
 
 ```python
@@ -447,7 +436,6 @@ df.groupby('FOLDERYEAR')['new_status'].value_counts().unstack(level=0)
 
     .dataframe thead th {
         text-align: right;
-    }
 </style>
 <table border="1" class="dataframe">
   <thead>
@@ -531,6 +519,7 @@ df.groupby('FOLDERYEAR')['new_status'].value_counts().unstack(level=0)
       <td>40412.0</td>
     </tr>
     <tr>
+    }
       <th>Pending</th>
       <td>3099.0</td>
       <td>4345.0</td>
@@ -1240,22 +1229,27 @@ df = df.append(df20, verify_integrity=True)
 df.groupby('id')['lifespan'].mean().plot.hist(bins=7, title='Lifespan of Vancouver businesses, 2013-2020')
 ```
 
-
-
-
-    <AxesSubplot:title={'center':'Lifespan of Vancouver businesses, 2013-2020'}, ylabel='Frequency'>
-
-
-
-
-    
-![png](images/van_biz_lifespan_hist.png)
-    
-
+![image](../../static/images/van_biz_lifespan_hist.png)
 
 So there we have it, the longer you are in business, the more likely you are to stay in business. Remember that tall bin at 7 years is just everything that is at least 7 years old - that bar is more properly read as *7 or more* years.
 
 And now we have a target variable! Or at least something we can easily make our target from. Now we can work on building our model and standing it up to a public facing portal so anybody interested in starting a business can use our model to see how long a business like theirs is likely to last. It's worth remembering that we've made a lot of assumptions here that are likely to affect our final results. We'll want to make a note of these and anything else we think might be worth experimenting with in the future to improve our model. 
 
-[^1]: When I say first thing, what I really mean is *first thing in this blog post*. I did a fair amount of random poking around just to figure out what cleaning needed to be done.
-[^2]: You know what they say about [data cleaning](https://www.reddit.com/r/datascience/comments/bupmyf/data_scientists_spend_up_to_80_of_time_on_data/). 
+After all of this, we have useable data, but we've made a whole bunch of assumptions along the way which will likely impact our results down the line. The following will go into our backlog to check / modify for a later version:
+
+1. **Insert list of assumptions here**
+2. Businesses that change name or address are currently treated as different businesses. This means any such business' lifespan will be artificially short. If this is systematically associated with a business surviving, it's going to bias our results.
+3. We only care about BC based businesses. If your business is based elsewhere, you're not in our trianing data.
+4. You have a business name! This and the BC assumption cost us about 20k rows, so if we want to get some of those back, we'll have to revise this for V1.
+
+
+[^1]: This is a term I just made up off the top of my head - should probably trademark it. I'm leaving it intentionally vague at this point because I'm not sure exactly what I will be showing them once this is done. Right now I'm imagining my target will be an indicator for whether or not a business survives for two years, so this Success Likelihood Score&trade; will probably just be the probability that, with the information provided to the model, your business will still be operating after two years (with requisite caveats).
+[^2]: When I say first thing, what I really mean is *first thing in this blog post*. I did a fair amount of random poking around just to figure out what cleaning needed to be done.
+[^3]: As with any analysis, there is always a trade-off between time and perfection. There are a lot of ways people refer to this (analysis paralysis, 80-20 rule, etc.) and it is an ever-present menace. There will always be little rabbit holes to go down, curiosities, inexplicable cases that "maybe if I just dig a little deeper, I can explain!!!". It's up to you as the analyst (or me in this case) to decide what is a good use of your time. **This. Is. Hard.** Always. Personally I have the attention span of a two year old, so I am always having to drag myself back to ask myself if what I am doing is likely to have a material impact on the analysis or if I am simply chasing something shiny. 
+[^4]: Turns out this one is going to wait for v1 as well. Between doing the dev work and writing these blog post, it seems like I am going to have to streamline as much as possible just to get something up and running.
+[^5]:
+[^6]:
+[^7]:
+[^8]:
+[^9]:
+[^10]: There is plenty of interesting analysis that you could do with these, including looking at the effect of Covid 19 on business creation, something that I would very much like to do at some point. But for now, prediction.
