@@ -2,7 +2,7 @@ baseURL = "https://colinspear.github.io/"
 relativeURLs = true
 languageCode = "en-us"
 title = "Colin Spear"
-theme = "ezhil"# "cactus" 
+theme = "cactus" # "ezhil"
 
 copyright = "© Colin Spear, 2021"
 

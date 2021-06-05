@@ -1,0 +1,74 @@
+baseURL = "http://example.org/"
+languageCode = "en-us"
+title = "Colin Spear"
+
+theme = "cactus"
+
+copyright = "Colin Spear" # cactus theme will use site title if copyright is not set
+
+# googleAnalytics = "UA-123-45"
+# googleAnalyticsAsync = true # not required
+
+[params]
+  colortheme = "dark" # dark, light, white, or classic
+  description = "Hi! I'm Colin. This is my playground. I share my writing, my notes and my intellectual wanderings here. I hope you can find something of interest amongst the many things that interest me. If you do, I would love to hear from you. You can send me an email at colinspear@gmail.com or find me on Twitter at [@colinspear](https://twitter.com/colinspear). If you would like to know a bit more about me, head over to the about page."
+
+[[params.social]]
+  name = "twitter"
+  link = "https://twitter.com/colinspear"
+
+[[params.social]]
+  name = "email"
+  link = "colinspear@gmail.com" # no need for "mailto:" at the start
+
+  [params.comments]
+    enabled = false
+    # engine = "disqus" # in progress
+
+# Main menu which appears below site header.
+# [[menu.main]]
+# name = "Home"
+# url = "/"
+# weight = 1
+
+[[menu.main]]
+name = "Posts"
+url = "/posts"
+weight = 2
+
+[[menu.main]]
+name = "Notes"
+url = "/notes"
+weight = 2
+
+[[menu.main]]
+name = "Learning"
+url = "/learning"
+weight = 2
+
+[[menu.main]]
+name = "People"
+url = "/people/people"
+weight = 2
+
+[[menu.main]]
+name = "Tags"
+url = "/tags"
+weight = 3
+
+[[menu.main]]
+name = "About"
+url = "/about"
+weight = 4
+
+[markup]
+  [markup.highlight]
+    codeFences = true
+    guessSyntax = false
+    hl_Lines = ""
+    lineNoStart = 1
+    lineNos = false
+    lineNumbersInTable = true
+    noClasses = true
+    style = "monokai"
+    tabWidth = 4
