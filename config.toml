@@ -1,5 +1,5 @@
 # test commit
-baseURL = "https://colinspear.github.io/"
+baseURL = "https://main.d1yldk8vibgm3z.amplifyapp.com/" #"https://colinspear.github.io/"
 relativeURLs = true
 languageCode = "en-us"
 title = "Colin Spear"
