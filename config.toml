@@ -1,4 +1,4 @@
-# baseURL = "https://colinspear.github.io/"
+baseURL = "https://colinspear.github.io/"
 relativeURLs = true
 languageCode = "en-us"
 title = "Colin Spear"
