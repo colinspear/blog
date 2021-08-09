@@ -229,9 +229,31 @@ nx.draw_networkx(G, with_labels=False, node_size=10, width=0.5)
 
 Voila!
 
-## Stats
+## Is this a Small World Network?
+
+Visually, this looks like it could be a [Small-world network](https://en.wikipedia.org/wiki/Small-world_network), with a sort of halo of clusters around the edgo of the graph and a non-trivial number of paths from opposing edges. From the Wikipedia article:
+
+> A small-world network is a type of mathematical graph in which most nodes are not neighbors of one another, but the neighbors of any given node are likely to be neighbors of each other and most nodes can be reached from every other node by a small number of hops or steps.
+
+To wrap up this blog post, I am going to calculate some statistics to see if this indeed is likely a Small-world network and have a look at the artists that most connect otherwise disparate parts of the graph.
+
+One of the signature characteristics of this type of network is that the distance between randomly chosen nodes (in this case artists) is proportional to the logarithm of the total number of nodes in the network[^2]. 
+
+According to [this post](https://stats.stackexchange.com/questions/175492/how-to-test-statistically-whether-my-network-graph-is-a-small-world-network), the best way to do this is to calculate the mean shortest path length and clustering coefficients of your network and compare them to the equivalent statistics of a synthetic random network. So this is what we will do. But before we do that, let's talk about what exactly those things are.
+
+> ### Diversion on path length and clustering
+> TODO: briefly explain clustering and path length
+
+Now, back to our analysis. Our procdure is the following:
+
+1. Calculate average path length and clustering coefficient of the original network.
+2. Generate the appropriate synthetic network.
+3. Repeat Step 1 for the synthetic network.
+4. Calculate small-world statistics.
+5. Prosper.
 
 
 
 
 [^1]: After doing some poking around, I noticed that they get most of their biographical information from [Rovi](http://prod-doc.rovicorp.com/mashery/index.php/Data/APIs/Rovi-Music), which also has **a lot** of other information. I can't tell what their usage model it, but I would love to poke into it more at some point.
+[^2]: At first I thought I could do this by randomly sampling nodes from my artist network, but it's not actually that simple. One interesting exercise that might get at this would be to choose an artist and build the connected graph step by step (i.e. record the original artist's network, then include their network's netowrks, and so on until you run out of artists or patience), calculating the distance between randomly chosen nodes and the log total nodes at each step. I think this would reasonably approximate the natural growth of a listening network and would certainly be better that just sampling nodes.
