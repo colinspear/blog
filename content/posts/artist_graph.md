@@ -244,7 +244,7 @@ According to [this post](https://stats.stackexchange.com/questions/175492/how-to
 > ### Diversion on path length and clustering
 > TODO: briefly explain clustering and path length
 
-Now, back to our analysis. Our procdure is the following:
+Now, back to our analysis. Our procedure is the following:
 
 1. Calculate average path length and clustering coefficient of the original network.
 2. Generate the appropriate synthetic network.
@@ -252,7 +252,11 @@ Now, back to our analysis. Our procdure is the following:
 4. Calculate small-world statistics.
 5. Prosper.
 
+## Why do we care about whether or not this is a small world network?
 
+The network we are examining is all of the related artists of the artists I follow on Spotify. What is this, exactly? According to the [Spotify API docs](https://developer.spotify.com/documentation/web-api/reference/#endpoint-get-an-artists-related-artists), related artists are _artists similar to a given artist_ and _similarity is based on analysis of the Spotify community’s listening history_. [This article](https://artists.spotify.com/blog/how-fans-also-like-works) goes into a bit more detail, hinting that size of listenership and number of shared listeners are important parameters in the algorithm that decides shared listeners, but few details are provided. This means that at a high, hand-wavy level, the related artists I see for [Benny Sings](https://open.spotify.com/artist/4gHcu2JoaXJ0mV4aNPCd7N?si=ZXWDHr2pQsGwdVPpamvtrg&dl_branch=1) are just other artists whose listeners overlap in some significant way with Benny Sings' listeners.
+
+So what we have here is a listening network. 
 
 
 [^1]: After doing some poking around, I noticed that they get most of their biographical information from [Rovi](http://prod-doc.rovicorp.com/mashery/index.php/Data/APIs/Rovi-Music), which also has **a lot** of other information. I can't tell what their usage model it, but I would love to poke into it more at some point.
